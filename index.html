@@ -55,6 +55,14 @@
       background: #fafafa;
     }
 
+    .summary {
+      background: #f0f0f0;
+      padding: 8px;
+      border-radius: 5px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+
     .results {
       background: #eef7ee;
       padding: 15px;
@@ -111,22 +119,32 @@
 </div>
 
 <script>
-  const billsDiv = document.getElementById("bills");
-  const oneOffsDiv = document.getElementById("oneOffs");
+const billsDiv = document.getElementById("bills");
+const oneOffsDiv = document.getElementById("oneOffs");
 
-  addBillBtn.addEventListener("click", () => addBill());
-  addOneOffBtn.addEventListener("click", () => addOneOff());
-  document.addEventListener("input", calculate);
+addBillBtn.addEventListener("click", () => addBill());
+addOneOffBtn.addEventListener("click", () => addOneOff());
+document.addEventListener("input", calculate);
 
-  function addBill(data = {}) {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
+function addBill(data = {}) {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.dataset.collapsed = "false";
+
+  const name = data.name || "";
+  const amount = data.amount || "";
+  const frequency = data.frequency || "monthly";
+
+  div.innerHTML = `
+    <div class="summary" onclick="toggleBill(this)">
+      ${name ? `${name} $${amount} ${frequency}` : 'New Bill'}
+    </div>
+    <div class="details">
       <label>Bill name</label>
-      <input type="text" value="${data.name || ""}">
+      <input type="text" value="${name}" placeholder="Bill name">
 
       <label>Amount</label>
-      <input type="number" value="${data.amount || ""}">
+      <input type="number" value="${amount}" placeholder="Amount">
 
       <label>Frequency</label>
       <select>
@@ -136,109 +154,148 @@
         <option value="quarterly">Quarterly</option>
         <option value="yearly">Yearly</option>
       </select>
-    `;
-    div.querySelector("select").value = data.frequency || "monthly";
-    billsDiv.appendChild(div);
-  }
+    </div>
+  `;
 
-  function addOneOff(data = {}) {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
+  div.querySelector("select").value = frequency;
+  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", updateSummary));
+  billsDiv.appendChild(div);
+}
+
+function addOneOff(data = {}) {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.dataset.collapsed = "false";
+
+  const name = data.name || "";
+  const amount = data.amount || "";
+  const date = data.date || "";
+
+  div.innerHTML = `
+    <div class="summary" onclick="toggleBill(this)">
+      ${name ? `${name} $${amount} by ${date}` : 'New Expense'}
+    </div>
+    <div class="details">
       <label>Expense name</label>
-      <input type="text" value="${data.name || ""}">
+      <input type="text" value="${name}" placeholder="Expense name">
 
       <label>Total amount</label>
-      <input type="number" value="${data.amount || ""}">
+      <input type="number" value="${amount}" placeholder="Amount">
 
       <label>Needed by date</label>
-      <input type="date" value="${data.date || ""}">
-    `;
-    oneOffsDiv.appendChild(div);
+      <input type="date" value="${date}">
+    </div>
+  `;
+
+  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", updateSummary));
+  oneOffsDiv.appendChild(div);
+}
+
+function toggleBill(summaryDiv) {
+  const parent = summaryDiv.parentElement;
+  const details = parent.querySelector(".details");
+  const collapsed = parent.dataset.collapsed === "true";
+  details.style.display = collapsed ? "block" : "none";
+  parent.dataset.collapsed = (!collapsed).toString();
+}
+
+function updateSummary(e) {
+  const parent = e.target.closest(".item");
+  const summary = parent.querySelector(".summary");
+  if (parent.parentElement.id === "bills") {
+    const name = parent.querySelector("input[type=text]").value;
+    const amount = parent.querySelector("input[type=number]").value;
+    const freq = parent.querySelector("select").value;
+    summary.textContent = `${name} $${amount} ${freq}`;
+  } else if (parent.parentElement.id === "oneOffs") {
+    const name = parent.querySelector("input[type=text]").value;
+    const amount = parent.querySelector("input[type=number]").value;
+    const date = parent.querySelector("input[type=date]").value;
+    summary.textContent = `${name} $${amount} by ${date}`;
   }
+  calculate();
+}
 
-  function frequencyToWeekly(amount, frequency) {
-    return {
-      weekly: amount,
-      fortnightly: amount / 2,
-      monthly: amount * 12 / 52,
-      quarterly: amount * 4 / 52,
-      yearly: amount / 52
-    }[frequency] || 0;
-  }
+// Budget calculations
+function frequencyToWeekly(amount, frequency) {
+  return {
+    weekly: amount,
+    fortnightly: amount / 2,
+    monthly: amount * 12 / 52,
+    quarterly: amount * 4 / 52,
+    yearly: amount / 52
+  }[frequency] || 0;
+}
 
-  function weeklyToPayCycle(amount, payFrequency) {
-    return {
-      weekly: amount,
-      fortnightly: amount * 2,
-      monthly: amount * 52 / 12
-    }[payFrequency] || 0;
-  }
+function weeklyToPayCycle(amount, payFrequency) {
+  return {
+    weekly: amount,
+    fortnightly: amount * 2,
+    monthly: amount * 52 / 12
+  }[payFrequency] || 0;
+}
 
-  function weeksUntil(date) {
-    const now = new Date();
-    const target = new Date(date);
-    return Math.max((target - now) / (1000 * 60 * 60 * 24 * 7), 1);
-  }
+function weeksUntil(date) {
+  const now = new Date();
+  const target = new Date(date);
+  return Math.max((target - now) / (1000 * 60 * 60 * 24 * 7), 1);
+}
 
-  function calculate() {
-    const income = +incomeAmount.value || 0;
-    const payFrequency = incomeFrequency.value;
+function calculate() {
+  const income = +incomeAmount.value || 0;
+  const payFrequency = incomeFrequency.value;
+  let totalWeekly = 0;
 
-    let totalWeekly = 0;
+  document.querySelectorAll("#bills .item").forEach(item => {
+    const inputs = item.querySelectorAll("input, select");
+    const amt = +inputs[1].value || 0;
+    const freq = inputs[2].value;
+    totalWeekly += frequencyToWeekly(amt, freq);
+  });
 
-    document.querySelectorAll("#bills .item").forEach(item => {
-      totalWeekly += frequencyToWeekly(
-        +item.children[3].value || 0,
-        item.children[5].value
-      );
-    });
+  document.querySelectorAll("#oneOffs .item").forEach(item => {
+    const inputs = item.querySelectorAll("input");
+    const amt = +inputs[1].value || 0;
+    const date = inputs[2].value;
+    if (date) totalWeekly += amt / weeksUntil(date);
+  });
 
-    document.querySelectorAll("#oneOffs .item").forEach(item => {
-      const amount = +item.children[3].value || 0;
-      const date = item.children[5].value;
-      if (date) totalWeekly += amount / weeksUntil(date);
-    });
+  const perPay = weeklyToPayCycle(totalWeekly, payFrequency);
+  setAside.textContent = perPay.toFixed(2);
+  remaining.textContent = (income - perPay).toFixed(2);
+}
 
-    const perPay = weeklyToPayCycle(totalWeekly, payFrequency);
-    setAside.textContent = perPay.toFixed(2);
-    remaining.textContent = (income - perPay).toFixed(2);
-  }
+// Save/load
+function saveData() {
+  const data = {
+    incomeAmount: incomeAmount.value,
+    incomeFrequency: incomeFrequency.value,
+    bills: [...document.querySelectorAll("#bills .item")].map(i => ({
+      name: i.querySelector("input[type=text]").value,
+      amount: i.querySelector("input[type=number]").value,
+      frequency: i.querySelector("select").value
+    })),
+    oneOffs: [...document.querySelectorAll("#oneOffs .item")].map(i => ({
+      name: i.querySelector("input[type=text]").value,
+      amount: i.querySelector("input[type=number]").value,
+      date: i.querySelector("input[type=date]").value
+    }))
+  };
+  localStorage.setItem("choffieBudget", JSON.stringify(data));
+  alert("Budget saved ✅");
+}
 
-  function saveData() {
-    const data = {
-      incomeAmount: incomeAmount.value,
-      incomeFrequency: incomeFrequency.value,
-      bills: [...document.querySelectorAll("#bills .item")].map(i => ({
-        name: i.children[1].value,
-        amount: i.children[3].value,
-        frequency: i.children[5].value
-      })),
-      oneOffs: [...document.querySelectorAll("#oneOffs .item")].map(i => ({
-        name: i.children[1].value,
-        amount: i.children[3].value,
-        date: i.children[5].value
-      }))
-    };
+function loadData() {
+  const data = JSON.parse(localStorage.getItem("choffieBudget"));
+  if (!data) return;
+  incomeAmount.value = data.incomeAmount;
+  incomeFrequency.value = data.incomeFrequency;
+  data.bills.forEach(addBill);
+  data.oneOffs.forEach(addOneOff);
+  calculate();
+}
 
-    localStorage.setItem("choffieBudget", JSON.stringify(data));
-    alert("Budget saved ✅");
-  }
-
-  function loadData() {
-    const data = JSON.parse(localStorage.getItem("choffieBudget"));
-    if (!data) return;
-
-    incomeAmount.value = data.incomeAmount;
-    incomeFrequency.value = data.incomeFrequency;
-
-    data.bills.forEach(addBill);
-    data.oneOffs.forEach(addOneOff);
-
-    calculate();
-  }
-
-  loadData();
+loadData();
 </script>
 
 </body>
