@@ -1,97 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Choffie Finance – Your Simple Budget</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 20px;
-    }
+<meta charset="UTF-8">
+<title>Choffie Finance – Your Simple Budget</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 20px;
+}
 
-    h1 {
-      text-align: center;
-      margin-top: 10px;
-    }
+h1 {
+  text-align: center;
+  margin-top: 10px;
+}
 
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
 
-    .section {
-      margin-bottom: 30px;
-    }
+.section {
+  margin-bottom: 30px;
+}
 
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
 
-    input, select, button {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
+input, select, button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  box-sizing: border-box;
+}
 
-    button {
-      cursor: pointer;
-      margin-top: 10px;
-    }
+button {
+  cursor: pointer;
+  margin-top: 10px;
+}
 
-    .item {
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      background: #fafafa;
-      position: relative;
-    }
+.item {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  background: #fafafa;
+  position: relative;
+}
 
-    .deleteBtn {
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 0.8em;
-      cursor: pointer;
-    }
+.deleteBtn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.9em;
+}
 
-    .summary {
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+.summary {
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .summary-left {
-      flex: 1;
-    }
+.summary-left {
+  flex: 1;
+}
 
-    .summary-right {
-      margin-left: 20px;
-      white-space: nowrap;
-    }
+.summary-right {
+  margin-left: 20px;
+  white-space: nowrap;
+}
 
-    .results {
-      background: #eef7ee;
-      padding: 15px;
-      border-radius: 6px;
-      font-size: 1.1em;
-    }
-  </style>
+.results {
+  background: #eef7ee;
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 1.1em;
+}
+</style>
 </head>
 <body>
 
@@ -153,7 +152,7 @@ function addBill(data={}) {
   div.className = "item";
 
   div.innerHTML = `
-    <button class="deleteBtn">X</button>
+    <button class="deleteBtn" type="button">X</button>
     <div class="summary">
       <div class="summary-left">${data.name || "New Bill"} $${data.amount || 0} ${data.frequency || 'monthly'}</div>
       <div class="summary-right">Amount to Set Aside: $0.00</div>
@@ -178,13 +177,11 @@ function addBill(data={}) {
   const detailsDiv = div.querySelector(".details");
   div.querySelector("select").value = data.frequency || "monthly";
 
-  // Collapse on click
   summaryDiv.addEventListener("click", () => {
     detailsDiv.style.display = detailsDiv.style.display === "none" ? "block" : "none";
     updateSummary(div);
   });
 
-  // Delete button
   div.querySelector(".deleteBtn").addEventListener("click", () => {
     div.remove();
     calculate();
@@ -202,7 +199,7 @@ function addOneOff(data={}) {
   div.className = "item";
 
   div.innerHTML = `
-    <button class="deleteBtn">X</button>
+    <button class="deleteBtn" type="button">X</button>
     <div class="summary">
       <div class="summary-left">${data.name || "New Expense"} $${data.amount || 0}${data.date ? " by " + data.date : ""}</div>
       <div class="summary-right">Amount to Set Aside: $0.00</div>
@@ -242,7 +239,7 @@ function addIncome(data={}) {
   div.className = "item";
 
   div.innerHTML = `
-    <button class="deleteBtn">X</button>
+    <button class="deleteBtn" type="button">X</button>
     <div class="summary">
       <div class="summary-left">${data.name || "New Income"} $${data.amount || 0} ${data.frequency || 'monthly'}</div>
       <div class="summary-right"></div>
@@ -348,7 +345,7 @@ function calculate() {
     const inputs = item.querySelectorAll("input, select");
     const amt = +inputs[1].value || 0;
     const freq = inputs[2].value;
-    incomeTotal += weeklyToPayCycle(frequencyToWeekly(amt, freq), freq); // convert income to per pay
+    incomeTotal += weeklyToPayCycle(frequencyToWeekly(amt, freq), freq);
   });
 
   document.querySelectorAll("#bills .item").forEach(item => {
