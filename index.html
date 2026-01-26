@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simple Bill Budgeter</title>
+  <title>Choffie Finance - Your Simple Bill Budget</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -47,10 +47,26 @@
 
     .item {
       border: 1px solid #ddd;
-      padding: 10px;
-      margin-top: 10px;
       border-radius: 5px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .edit {
+      padding: 10px;
       background: #fafafa;
+    }
+
+    .summary {
+      padding: 12px;
+      background: #f0f4f8;
+      cursor: pointer;
+      font-weight: bold;
+      display: none;
+    }
+
+    .summary span {
+      font-weight: normal;
     }
 
     .results {
@@ -72,7 +88,7 @@
     <h2>Income</h2>
 
     <label>Take-home pay amount</label>
-    <input type="number" id="incomeAmount" placeholder="e.g. 1800">
+    <input type="number" id="incomeAmount">
 
     <label>Pay frequency</label>
     <select id="incomeFrequency">
@@ -82,14 +98,14 @@
     </select>
   </div>
 
-  <!-- RECURRING BILLS -->
+  <!-- BILLS -->
   <div class="section">
     <h2>Recurring Bills</h2>
     <div id="bills"></div>
     <button id="addBillBtn" type="button">Add Bill</button>
   </div>
 
-  <!-- ONE-OFF EXPENSES -->
+  <!-- ONE-OFFS -->
   <div class="section">
     <h2>One-off Expenses</h2>
     <div id="oneOffs"></div>
@@ -114,41 +130,95 @@
   document.addEventListener("input", calculate);
 
   function addBill() {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <label>Bill name</label>
-      <input type="text" placeholder="e.g. Rent">
+    const item = document.createElement("div");
+    item.className = "item";
 
-      <label>Amount</label>
-      <input type="number" placeholder="e.g. 1200">
+    item.innerHTML = `
+      <div class="summary"></div>
+      <div class="edit">
+        <label>Bill name</label>
+        <input type="text">
 
-      <label>Frequency</label>
-      <select>
-        <option value="weekly">Weekly</option>
-        <option value="fortnightly">Fortnightly</option>
-        <option value="monthly">Monthly</option>
-        <option value="quarterly">Quarterly</option>
-        <option value="yearly">Yearly</option>
-      </select>
+        <label>Amount</label>
+        <input type="number">
+
+        <label>Frequency</label>
+        <select>
+          <option value="weekly">Weekly</option>
+          <option value="fortnightly">Fortnightly</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+
+        <button type="button">Done</button>
+      </div>
     `;
-    billsDiv.appendChild(div);
+
+    const summary = item.querySelector(".summary");
+    const edit = item.querySelector(".edit");
+    const doneBtn = edit.querySelector("button");
+
+    doneBtn.onclick = () => {
+      const name = edit.children[1].value || "Unnamed bill";
+      const amount = edit.children[3].value || "0";
+      const freq = edit.children[5].value;
+
+      summary.textContent = `${name} — $${amount} / ${freq}`;
+      edit.style.display = "none";
+      summary.style.display = "block";
+      calculate();
+    };
+
+    summary.onclick = () => {
+      summary.style.display = "none";
+      edit.style.display = "block";
+    };
+
+    billsDiv.appendChild(item);
   }
 
   function addOneOff() {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <label>Expense name</label>
-      <input type="text" placeholder="e.g. Holiday">
+    const item = document.createElement("div");
+    item.className = "item";
 
-      <label>Total amount</label>
-      <input type="number" placeholder="e.g. 3000">
+    item.innerHTML = `
+      <div class="summary"></div>
+      <div class="edit">
+        <label>Expense name</label>
+        <input type="text">
 
-      <label>Needed by date</label>
-      <input type="date">
+        <label>Total amount</label>
+        <input type="number">
+
+        <label>Needed by date</label>
+        <input type="date">
+
+        <button type="button">Done</button>
+      </div>
     `;
-    oneOffsDiv.appendChild(div);
+
+    const summary = item.querySelector(".summary");
+    const edit = item.querySelector(".edit");
+    const doneBtn = edit.querySelector("button");
+
+    doneBtn.onclick = () => {
+      const name = edit.children[1].value || "One-off";
+      const amount = edit.children[3].value || "0";
+      const date = edit.children[5].value || "no date";
+
+      summary.textContent = `${name} — $${amount} by ${date}`;
+      edit.style.display = "none";
+      summary.style.display = "block";
+      calculate();
+    };
+
+    summary.onclick = () => {
+      summary.style.display = "none";
+      edit.style.display = "block";
+    };
+
+    oneOffsDiv.appendChild(item);
   }
 
   function frequencyToWeekly(amount, frequency) {
@@ -185,21 +255,20 @@
     let totalWeekly = 0;
 
     document.querySelectorAll("#bills .item").forEach(item => {
-      const amount = parseFloat(item.children[3].value) || 0;
-      const frequency = item.children[5].value;
-      totalWeekly += frequencyToWeekly(amount, frequency);
+      const edit = item.querySelector(".edit");
+      const amount = parseFloat(edit.children[3].value) || 0;
+      const freq = edit.children[5].value;
+      totalWeekly += frequencyToWeekly(amount, freq);
     });
 
     document.querySelectorAll("#oneOffs .item").forEach(item => {
-      const amount = parseFloat(item.children[3].value) || 0;
-      const date = item.children[5].value;
-      if (date) {
-        totalWeekly += amount / weeksUntil(date);
-      }
+      const edit = item.querySelector(".edit");
+      const amount = parseFloat(edit.children[3].value) || 0;
+      const date = edit.children[5].value;
+      if (date) totalWeekly += amount / weeksUntil(date);
     });
 
     const perPay = weeklyToPayCycle(totalWeekly, payFrequency);
-
     document.getElementById("setAside").textContent = perPay.toFixed(2);
     document.getElementById("remaining").textContent = (income - perPay).toFixed(2);
   }
