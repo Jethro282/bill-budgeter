@@ -43,7 +43,7 @@
 
     button {
       cursor: pointer;
-      margin-top: 15px;
+      margin-top: 10px;
     }
 
     .item {
@@ -52,6 +52,20 @@
       margin-top: 10px;
       border-radius: 5px;
       background: #fafafa;
+      position: relative;
+    }
+
+    .deleteBtn {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.8em;
+      cursor: pointer;
     }
 
     .summary {
@@ -87,15 +101,9 @@
 
   <!-- INCOME -->
   <div class="section">
-    <h2>Income</h2>
-    <label>Take-home pay amount</label>
-    <input type="number" id="incomeAmount">
-    <label>Pay frequency</label>
-    <select id="incomeFrequency">
-      <option value="weekly">Weekly</option>
-      <option value="fortnightly">Fortnightly</option>
-      <option value="monthly">Monthly</option>
-    </select>
+    <h2>Income Sources</h2>
+    <div id="incomes"></div>
+    <button type="button" id="addIncomeBtn">Add Income</button>
   </div>
 
   <!-- RECURRING BILLS -->
@@ -127,33 +135,34 @@
 <script>
 const billsDiv = document.getElementById("bills");
 const oneOffsDiv = document.getElementById("oneOffs");
+const incomesDiv = document.getElementById("incomes");
 const addBillBtn = document.getElementById("addBillBtn");
 const addOneOffBtn = document.getElementById("addOneOffBtn");
-const incomeAmount = document.getElementById("incomeAmount");
-const incomeFrequency = document.getElementById("incomeFrequency");
+const addIncomeBtn = document.getElementById("addIncomeBtn");
 const setAside = document.getElementById("setAside");
 const remaining = document.getElementById("remaining");
 
 addBillBtn.addEventListener("click", () => addBill());
 addOneOffBtn.addEventListener("click", () => addOneOff());
+addIncomeBtn.addEventListener("click", () => addIncome());
 document.addEventListener("input", calculate);
 
-function addBill(data = {}) {
+// ----- BILLS -----
+function addBill(data={}) {
   const div = document.createElement("div");
   div.className = "item";
 
   div.innerHTML = `
+    <button class="deleteBtn">X</button>
     <div class="summary">
       <div class="summary-left">${data.name || "New Bill"} $${data.amount || 0} ${data.frequency || 'monthly'}</div>
       <div class="summary-right">Amount to Set Aside: $0.00</div>
     </div>
     <div class="details">
       <label>Bill name</label>
-      <input type="text" value="${data.name || ""}">
-
+      <input type="text" value="${data.name || ''}">
       <label>Amount</label>
-      <input type="number" value="${data.amount || ""}">
-
+      <input type="number" value="${data.amount || ''}">
       <label>Frequency</label>
       <select>
         <option value="weekly">Weekly</option>
@@ -169,9 +178,16 @@ function addBill(data = {}) {
   const detailsDiv = div.querySelector(".details");
   div.querySelector("select").value = data.frequency || "monthly";
 
+  // Collapse on click
   summaryDiv.addEventListener("click", () => {
     detailsDiv.style.display = detailsDiv.style.display === "none" ? "block" : "none";
     updateSummary(div);
+  });
+
+  // Delete button
+  div.querySelector(".deleteBtn").addEventListener("click", () => {
+    div.remove();
+    calculate();
   });
 
   div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
@@ -180,24 +196,24 @@ function addBill(data = {}) {
   detailsDiv.style.display = "block";
 }
 
-function addOneOff(data = {}) {
+// ----- ONE-OFF EXPENSES -----
+function addOneOff(data={}) {
   const div = document.createElement("div");
   div.className = "item";
 
   div.innerHTML = `
+    <button class="deleteBtn">X</button>
     <div class="summary">
       <div class="summary-left">${data.name || "New Expense"} $${data.amount || 0}${data.date ? " by " + data.date : ""}</div>
       <div class="summary-right">Amount to Set Aside: $0.00</div>
     </div>
     <div class="details">
       <label>Expense name</label>
-      <input type="text" value="${data.name || ""}">
-
+      <input type="text" value="${data.name || ''}">
       <label>Total amount</label>
-      <input type="number" value="${data.amount || ""}">
-
+      <input type="number" value="${data.amount || ''}">
       <label>Needed by date</label>
-      <input type="date" value="${data.date || ""}">
+      <input type="date" value="${data.date || ''}">
     </div>
   `;
 
@@ -209,12 +225,63 @@ function addOneOff(data = {}) {
     updateSummary(div);
   });
 
+  div.querySelector(".deleteBtn").addEventListener("click", () => {
+    div.remove();
+    calculate();
+  });
+
   div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
 
   oneOffsDiv.appendChild(div);
   detailsDiv.style.display = "block";
 }
 
+// ----- INCOME SOURCES -----
+function addIncome(data={}) {
+  const div = document.createElement("div");
+  div.className = "item";
+
+  div.innerHTML = `
+    <button class="deleteBtn">X</button>
+    <div class="summary">
+      <div class="summary-left">${data.name || "New Income"} $${data.amount || 0} ${data.frequency || 'monthly'}</div>
+      <div class="summary-right"></div>
+    </div>
+    <div class="details">
+      <label>Income name</label>
+      <input type="text" value="${data.name || ''}">
+      <label>Amount</label>
+      <input type="number" value="${data.amount || ''}">
+      <label>Frequency</label>
+      <select>
+        <option value="weekly">Weekly</option>
+        <option value="fortnightly">Fortnightly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+  `;
+
+  const summaryDiv = div.querySelector(".summary");
+  const detailsDiv = div.querySelector(".details");
+  div.querySelector("select").value = data.frequency || "monthly";
+
+  summaryDiv.addEventListener("click", () => {
+    detailsDiv.style.display = detailsDiv.style.display === "none" ? "block" : "none";
+    updateSummary(div);
+  });
+
+  div.querySelector(".deleteBtn").addEventListener("click", () => {
+    div.remove();
+    calculate();
+  });
+
+  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
+
+  incomesDiv.appendChild(div);
+  detailsDiv.style.display = "block";
+}
+
+// ----- UPDATE SUMMARY -----
 function updateSummary(div) {
   const summaryLeft = div.querySelector(".summary-left");
   const summaryRight = div.querySelector(".summary-right");
@@ -229,7 +296,7 @@ function updateSummary(div) {
     weeklyAmount = frequencyToWeekly(amount, freq);
     summaryLeft.textContent = `${name} $${amount} ${freq}`;
     summaryRight.textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
-  } else {
+  } else if (div.parentElement.id === "oneOffs") {
     const name = inputs[0].value || "New Expense";
     const amount = +inputs[1].value || 0;
     const date = inputs[2].value;
@@ -237,12 +304,18 @@ function updateSummary(div) {
     weeklyAmount = amount / weeks;
     summaryLeft.textContent = `${name} $${amount}${date ? " by " + date : ""}`;
     summaryRight.textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
+  } else {
+    const name = inputs[0].value || "New Income";
+    const amount = +inputs[1].value || 0;
+    const freq = inputs[2].value || "monthly";
+    summaryLeft.textContent = `${name} $${amount} ${freq}`;
+    summaryRight.textContent = "";
   }
 
   calculate();
 }
 
-// Budget calculations
+// ----- BUDGET CALCULATIONS -----
 function frequencyToWeekly(amount, frequency) {
   return {
     weekly: amount,
@@ -268,9 +341,15 @@ function weeksUntil(date) {
 }
 
 function calculate() {
-  const income = +incomeAmount.value || 0;
-  const payFrequency = incomeFrequency.value;
   let totalWeekly = 0;
+  let incomeTotal = 0;
+
+  document.querySelectorAll("#incomes .item").forEach(item => {
+    const inputs = item.querySelectorAll("input, select");
+    const amt = +inputs[1].value || 0;
+    const freq = inputs[2].value;
+    incomeTotal += weeklyToPayCycle(frequencyToWeekly(amt, freq), freq); // convert income to per pay
+  });
 
   document.querySelectorAll("#bills .item").forEach(item => {
     const inputs = item.querySelectorAll("input, select");
@@ -286,16 +365,20 @@ function calculate() {
     if (date) totalWeekly += amt / weeksUntil(date);
   });
 
+  const payFrequency = document.querySelector("#incomes .item select") ? document.querySelector("#incomes .item select").value : "weekly";
   const perPay = weeklyToPayCycle(totalWeekly, payFrequency);
   setAside.textContent = perPay.toFixed(2);
-  remaining.textContent = (income - perPay).toFixed(2);
+  remaining.textContent = (incomeTotal - perPay).toFixed(2);
 }
 
-// Save/load
+// ----- SAVE / LOAD -----
 function saveData() {
   const data = {
-    incomeAmount: incomeAmount.value,
-    incomeFrequency: incomeFrequency.value,
+    incomes: [...document.querySelectorAll("#incomes .item")].map(i => ({
+      name: i.querySelector("input[type=text]").value,
+      amount: i.querySelector("input[type=number]").value,
+      frequency: i.querySelector("select").value
+    })),
     bills: [...document.querySelectorAll("#bills .item")].map(i => ({
       name: i.querySelector("input[type=text]").value,
       amount: i.querySelector("input[type=number]").value,
@@ -314,8 +397,7 @@ function saveData() {
 function loadData() {
   const data = JSON.parse(localStorage.getItem("choffieBudget"));
   if (!data) return;
-  incomeAmount.value = data.incomeAmount;
-  incomeFrequency.value = data.incomeFrequency;
+  data.incomes.forEach(addIncome);
   data.bills.forEach(addBill);
   data.oneOffs.forEach(addOneOff);
   calculate();
