@@ -59,6 +59,16 @@
       cursor: pointer;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-left {
+      flex: 1;
+    }
+
+    .summary-right {
+      margin-left: 20px;
+      white-space: nowrap;
     }
 
     .results {
@@ -78,10 +88,8 @@
   <!-- INCOME -->
   <div class="section">
     <h2>Income</h2>
-
     <label>Take-home pay amount</label>
     <input type="number" id="incomeAmount">
-
     <label>Pay frequency</label>
     <select id="incomeFrequency">
       <option value="weekly">Weekly</option>
@@ -135,7 +143,10 @@ function addBill(data = {}) {
   div.className = "item";
 
   div.innerHTML = `
-    <div class="summary">${data.name || "New Bill"}<span class="amountToSetAside">$0.00</span></div>
+    <div class="summary">
+      <div class="summary-left">${data.name || "New Bill"} $${data.amount || 0} ${data.frequency || 'monthly'}</div>
+      <div class="summary-right">Amount to Set Aside: $0.00</div>
+    </div>
     <div class="details">
       <label>Bill name</label>
       <input type="text" value="${data.name || ""}">
@@ -166,7 +177,7 @@ function addBill(data = {}) {
   div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
 
   billsDiv.appendChild(div);
-  detailsDiv.style.display = "block"; // start expanded
+  detailsDiv.style.display = "block";
 }
 
 function addOneOff(data = {}) {
@@ -174,7 +185,10 @@ function addOneOff(data = {}) {
   div.className = "item";
 
   div.innerHTML = `
-    <div class="summary">${data.name || "New Expense"}<span class="amountToSetAside">$0.00</span></div>
+    <div class="summary">
+      <div class="summary-left">${data.name || "New Expense"} $${data.amount || 0}${data.date ? " by " + data.date : ""}</div>
+      <div class="summary-right">Amount to Set Aside: $0.00</div>
+    </div>
     <div class="details">
       <label>Expense name</label>
       <input type="text" value="${data.name || ""}">
@@ -198,11 +212,12 @@ function addOneOff(data = {}) {
   div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
 
   oneOffsDiv.appendChild(div);
-  detailsDiv.style.display = "block"; // start expanded
+  detailsDiv.style.display = "block";
 }
 
 function updateSummary(div) {
-  const summaryDiv = div.querySelector(".summary");
+  const summaryLeft = div.querySelector(".summary-left");
+  const summaryRight = div.querySelector(".summary-right");
   const detailsDiv = div.querySelector(".details");
   const inputs = detailsDiv.querySelectorAll("input, select");
   let weeklyAmount = 0;
@@ -212,17 +227,19 @@ function updateSummary(div) {
     const amount = +inputs[1].value || 0;
     const freq = inputs[2].value || "monthly";
     weeklyAmount = frequencyToWeekly(amount, freq);
-    summaryDiv.innerHTML = `${name}<span class="amountToSetAside">Amount to Set Aside: $${weeklyAmount.toFixed(2)}</span>`;
+    summaryLeft.textContent = `${name} $${amount} ${freq}`;
+    summaryRight.textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
   } else {
     const name = inputs[0].value || "New Expense";
     const amount = +inputs[1].value || 0;
     const date = inputs[2].value;
     const weeks = date ? weeksUntil(date) : 1;
     weeklyAmount = amount / weeks;
-    summaryDiv.innerHTML = `${name}<span class="amountToSetAside">Amount to Set Aside: $${weeklyAmount.toFixed(2)}</span>`;
+    summaryLeft.textContent = `${name} $${amount}${date ? " by " + date : ""}`;
+    summaryRight.textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
   }
 
-  calculate(); // recalc total
+  calculate();
 }
 
 // Budget calculations
