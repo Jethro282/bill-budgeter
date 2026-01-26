@@ -9,33 +9,50 @@
       background: #f4f6f8;
       padding: 20px;
     }
-    h1 { text-align: center; }
+
+    h1 {
+      text-align: center;
+    }
+
     .container {
       max-width: 900px;
       margin: auto;
-      background: #fff;
+      background: #ffffff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .section { margin-bottom: 30px; }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
     label {
       display: block;
       margin-top: 10px;
       font-weight: bold;
     }
+
     input, select, button {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
+      box-sizing: border-box;
     }
-    button { cursor: pointer; margin-top: 15px; }
+
+    button {
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
     .item {
       border: 1px solid #ddd;
       padding: 10px;
       margin-top: 10px;
       border-radius: 5px;
+      background: #fafafa;
     }
+
     .results {
       background: #eef7ee;
       padding: 15px;
@@ -50,10 +67,12 @@
 
 <div class="container">
 
+  <!-- INCOME -->
   <div class="section">
     <h2>Income</h2>
+
     <label>Take-home pay amount</label>
-    <input type="number" id="incomeAmount">
+    <input type="number" id="incomeAmount" placeholder="e.g. 1800">
 
     <label>Pay frequency</label>
     <select id="incomeFrequency">
@@ -63,18 +82,21 @@
     </select>
   </div>
 
+  <!-- RECURRING BILLS -->
   <div class="section">
     <h2>Recurring Bills</h2>
     <div id="bills"></div>
-    <button onclick="addBill()">Add Bill</button>
+    <button id="addBillBtn" type="button">Add Bill</button>
   </div>
 
+  <!-- ONE-OFF EXPENSES -->
   <div class="section">
     <h2>One-off Expenses</h2>
     <div id="oneOffs"></div>
-    <button onclick="addOneOff()">Add One-off Expense</button>
+    <button id="addOneOffBtn" type="button">Add One-off Expense</button>
   </div>
 
+  <!-- RESULTS -->
   <div class="section results">
     <h2>Results (per pay)</h2>
     <p><strong>Total to set aside:</strong> $<span id="setAside">0.00</span></p>
@@ -87,14 +109,20 @@
   const billsDiv = document.getElementById("bills");
   const oneOffsDiv = document.getElementById("oneOffs");
 
+  document.getElementById("addBillBtn").addEventListener("click", addBill);
+  document.getElementById("addOneOffBtn").addEventListener("click", addOneOff);
+  document.addEventListener("input", calculate);
+
   function addBill() {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
       <label>Bill name</label>
-      <input type="text">
+      <input type="text" placeholder="e.g. Rent">
+
       <label>Amount</label>
-      <input type="number">
+      <input type="number" placeholder="e.g. 1200">
+
       <label>Frequency</label>
       <select>
         <option value="weekly">Weekly</option>
@@ -112,9 +140,11 @@
     div.className = "item";
     div.innerHTML = `
       <label>Expense name</label>
-      <input type="text">
+      <input type="text" placeholder="e.g. Holiday">
+
       <label>Total amount</label>
-      <input type="number">
+      <input type="number" placeholder="e.g. 3000">
+
       <label>Needed by date</label>
       <input type="date">
     `;
@@ -134,4 +164,46 @@
 
   function weeklyToPayCycle(amountWeekly, payFrequency) {
     switch (payFrequency) {
+      case "weekly": return amountWeekly;
+      case "fortnightly": return amountWeekly * 2;
+      case "monthly": return amountWeekly * 52 / 12;
+      default: return 0;
+    }
+  }
 
+  function weeksUntil(date) {
+    const now = new Date();
+    const target = new Date(date);
+    const diff = (target - now) / (1000 * 60 * 60 * 24 * 7);
+    return Math.max(diff, 1);
+  }
+
+  function calculate() {
+    const income = parseFloat(document.getElementById("incomeAmount").value) || 0;
+    const payFrequency = document.getElementById("incomeFrequency").value;
+
+    let totalWeekly = 0;
+
+    document.querySelectorAll("#bills .item").forEach(item => {
+      const amount = parseFloat(item.children[3].value) || 0;
+      const frequency = item.children[5].value;
+      totalWeekly += frequencyToWeekly(amount, frequency);
+    });
+
+    document.querySelectorAll("#oneOffs .item").forEach(item => {
+      const amount = parseFloat(item.children[3].value) || 0;
+      const date = item.children[5].value;
+      if (date) {
+        totalWeekly += amount / weeksUntil(date);
+      }
+    });
+
+    const perPay = weeklyToPayCycle(totalWeekly, payFrequency);
+
+    document.getElementById("setAside").textContent = perPay.toFixed(2);
+    document.getElementById("remaining").textContent = (income - perPay).toFixed(2);
+  }
+</script>
+
+</body>
+</html>
