@@ -13,6 +13,16 @@
 
     h1 {
       text-align: center;
+      margin-top: 10px;
+    }
+
+    .logo {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      height: 50px;
+      width: auto;
+      z-index: 1000;
     }
 
     .container {
@@ -64,6 +74,12 @@
 </head>
 <body>
 
+<!-- LOGO -->
+<img 
+  src="https://chatgpt.com/backend-api/estuary/content?id=file_00000000e2d461fa844c65b5f4779f1b&ts=491503&p=fs&cid=1&sig=23ecf944d44dd4437ab4302285039cfeb8a271df404ec89b498f22a89edb9f52&v=0"
+  alt="Choffie Finance Logo"
+  class="logo">
+
 <h1>Choffie Finance – Your Simple Budget</h1>
 
 <div class="container">
@@ -113,8 +129,8 @@
   const billsDiv = document.getElementById("bills");
   const oneOffsDiv = document.getElementById("oneOffs");
 
-  document.getElementById("addBillBtn").addEventListener("click", addBill);
-  document.getElementById("addOneOffBtn").addEventListener("click", addOneOff);
+  addBillBtn.addEventListener("click", () => addBill());
+  addOneOffBtn.addEventListener("click", () => addOneOff());
   document.addEventListener("input", calculate);
 
   function addBill(data = {}) {
@@ -187,9 +203,10 @@
     let totalWeekly = 0;
 
     document.querySelectorAll("#bills .item").forEach(item => {
-      const amount = +item.children[3].value || 0;
-      const frequency = item.children[5].value;
-      totalWeekly += frequencyToWeekly(amount, frequency);
+      totalWeekly += frequencyToWeekly(
+        +item.children[3].value || 0,
+        item.children[5].value
+      );
     });
 
     document.querySelectorAll("#oneOffs .item").forEach(item => {
