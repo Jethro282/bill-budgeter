@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Choffie Finance – Your Simple Budget</title>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -56,10 +55,7 @@
     }
 
     .summary {
-      background: #f0f0f0;
-      padding: 8px;
-      border-radius: 5px;
-      margin-top: 5px;
+      font-weight: bold;
       cursor: pointer;
     }
 
@@ -121,6 +117,12 @@
 <script>
 const billsDiv = document.getElementById("bills");
 const oneOffsDiv = document.getElementById("oneOffs");
+const addBillBtn = document.getElementById("addBillBtn");
+const addOneOffBtn = document.getElementById("addOneOffBtn");
+const incomeAmount = document.getElementById("incomeAmount");
+const incomeFrequency = document.getElementById("incomeFrequency");
+const setAside = document.getElementById("setAside");
+const remaining = document.getElementById("remaining");
 
 addBillBtn.addEventListener("click", () => addBill());
 addOneOffBtn.addEventListener("click", () => addOneOff());
@@ -129,22 +131,15 @@ document.addEventListener("input", calculate);
 function addBill(data = {}) {
   const div = document.createElement("div");
   div.className = "item";
-  div.dataset.collapsed = "false";
-
-  const name = data.name || "";
-  const amount = data.amount || "";
-  const frequency = data.frequency || "monthly";
 
   div.innerHTML = `
-    <div class="summary" onclick="toggleBill(this)">
-      ${name ? `${name} $${amount} ${frequency}` : 'New Bill'}
-    </div>
+    <div class="summary">${data.name || "New Bill"}</div>
     <div class="details">
       <label>Bill name</label>
-      <input type="text" value="${name}" placeholder="Bill name">
+      <input type="text" value="${data.name || ""}">
 
       <label>Amount</label>
-      <input type="number" value="${amount}" placeholder="Amount">
+      <input type="number" value="${data.amount || ""}">
 
       <label>Frequency</label>
       <select>
@@ -157,61 +152,75 @@ function addBill(data = {}) {
     </div>
   `;
 
-  div.querySelector("select").value = frequency;
-  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", updateSummary));
+  const summaryDiv = div.querySelector(".summary");
+  const detailsDiv = div.querySelector(".details");
+  div.querySelector("select").value = data.frequency || "monthly";
+
+  summaryDiv.addEventListener("click", () => {
+    if (detailsDiv.style.display === "none") {
+      detailsDiv.style.display = "block";
+    } else {
+      detailsDiv.style.display = "none";
+      updateSummary(div);
+    }
+  });
+
+  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
+
   billsDiv.appendChild(div);
+  detailsDiv.style.display = "block"; // start expanded
 }
 
 function addOneOff(data = {}) {
   const div = document.createElement("div");
   div.className = "item";
-  div.dataset.collapsed = "false";
-
-  const name = data.name || "";
-  const amount = data.amount || "";
-  const date = data.date || "";
 
   div.innerHTML = `
-    <div class="summary" onclick="toggleBill(this)">
-      ${name ? `${name} $${amount} by ${date}` : 'New Expense'}
-    </div>
+    <div class="summary">${data.name || "New Expense"}</div>
     <div class="details">
       <label>Expense name</label>
-      <input type="text" value="${name}" placeholder="Expense name">
+      <input type="text" value="${data.name || ""}">
 
       <label>Total amount</label>
-      <input type="number" value="${amount}" placeholder="Amount">
+      <input type="number" value="${data.amount || ""}">
 
       <label>Needed by date</label>
-      <input type="date" value="${date}">
+      <input type="date" value="${data.date || ""}">
     </div>
   `;
 
-  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", updateSummary));
+  const summaryDiv = div.querySelector(".summary");
+  const detailsDiv = div.querySelector(".details");
+
+  summaryDiv.addEventListener("click", () => {
+    if (detailsDiv.style.display === "none") {
+      detailsDiv.style.display = "block";
+    } else {
+      detailsDiv.style.display = "none";
+      updateSummary(div);
+    }
+  });
+
+  div.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => updateSummary(div)));
+
   oneOffsDiv.appendChild(div);
+  detailsDiv.style.display = "block"; // start expanded
 }
 
-function toggleBill(summaryDiv) {
-  const parent = summaryDiv.parentElement;
-  const details = parent.querySelector(".details");
-  const collapsed = parent.dataset.collapsed === "true";
-  details.style.display = collapsed ? "block" : "none";
-  parent.dataset.collapsed = (!collapsed).toString();
-}
-
-function updateSummary(e) {
-  const parent = e.target.closest(".item");
-  const summary = parent.querySelector(".summary");
-  if (parent.parentElement.id === "bills") {
-    const name = parent.querySelector("input[type=text]").value;
-    const amount = parent.querySelector("input[type=number]").value;
-    const freq = parent.querySelector("select").value;
-    summary.textContent = `${name} $${amount} ${freq}`;
-  } else if (parent.parentElement.id === "oneOffs") {
-    const name = parent.querySelector("input[type=text]").value;
-    const amount = parent.querySelector("input[type=number]").value;
-    const date = parent.querySelector("input[type=date]").value;
-    summary.textContent = `${name} $${amount} by ${date}`;
+function updateSummary(div) {
+  const summaryDiv = div.querySelector(".summary");
+  const detailsDiv = div.querySelector(".details");
+  const inputs = detailsDiv.querySelectorAll("input, select");
+  if (div.parentElement.id === "bills") {
+    const name = inputs[0].value || "New Bill";
+    const amount = inputs[1].value || 0;
+    const freq = inputs[2].value || "monthly";
+    summaryDiv.textContent = `${name} $${amount} ${freq}`;
+  } else {
+    const name = inputs[0].value || "New Expense";
+    const amount = inputs[1].value || 0;
+    const date = inputs[2].value || "";
+    summaryDiv.textContent = `${name} $${amount}${date ? " by " + date : ""}`;
   }
   calculate();
 }
