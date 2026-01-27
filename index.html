@@ -173,7 +173,7 @@ button {
 
   <!-- RESULTS -->
   <div class="section results">
-    <h2>Results (per week)</h2>
+    <h2 id="resultsHeading">Results</h2>
     <p><strong>Total to set aside:</strong> $<span id="setAside">0.00</span></p>
     <p><strong>Money left to spend:</strong> $<span id="remaining">0.00</span></p>
   </div>
@@ -191,6 +191,7 @@ const salaryDiv = document.getElementById("salaryDiv");
 const otherIncomesDiv = document.getElementById("otherIncomes");
 const billsDiv = document.getElementById("bills");
 const oneOffsDiv = document.getElementById("oneOffs");
+const resultsHeading = document.getElementById("resultsHeading");
 
 document.getElementById("addBillBtn").addEventListener("click", () => addBill());
 document.getElementById("addOneOffBtn").addEventListener("click", () => addOneOff());
@@ -303,9 +304,10 @@ function updateBillSummary(div) {
   const name = inputs[0].value || "New Bill";
   const amount = +inputs[1].value || 0;
   const freq = inputs[2].value || "monthly";
-  const weeklyAmount = frequencyToWeekly(amount, freq);
+  const salaryFreq = salaryDiv.querySelector("select").value || "monthly";
+  const amountSetAside = convertToSalaryFrequency(amount, freq, salaryFreq);
   div.querySelector(".summary-left").textContent = `${name} $${amount} ${freq}`;
-  div.querySelector(".summary-right").textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
+  div.querySelector(".summary-right").textContent = `Amount to Set Aside: $${amountSetAside.toFixed(2)}`;
   calculate();
 }
 
@@ -347,9 +349,11 @@ function updateOneOffSummary(div) {
   const amount = +inputs[1].value || 0;
   const date = inputs[2].value;
   const weeks = date ? weeksUntil(date) : 1;
+  const salaryFreq = salaryDiv.querySelector("select").value || "monthly";
   const weeklyAmount = amount / weeks;
+  const amountSetAside = convertToSalaryFrequency(weeklyAmount, "weekly", salaryFreq);
   div.querySelector(".summary-left").textContent = `${name} $${amount}${date ? " by " + date : ""}`;
-  div.querySelector(".summary-right").textContent = `Amount to Set Aside: $${weeklyAmount.toFixed(2)}`;
+  div.querySelector(".summary-right").textContent = `Amount to Set Aside: $${amountSetAside.toFixed(2)}`;
   calculate();
 }
 
@@ -364,6 +368,17 @@ function frequencyToWeekly(amount, frequency) {
   }[frequency] || 0;
 }
 
+function convertToSalaryFrequency(amount, fromFreq, salaryFreq) {
+  const weekly = frequencyToWeekly(amount, fromFreq);
+  return {
+    weekly: weekly,
+    fortnightly: weekly * 2,
+    monthly: weekly * 52 / 12,
+    quarterly: weekly * 52 / 4,
+    yearly: weekly * 52
+  }[salaryFreq] || 0;
+}
+
 function weeksUntil(date) {
   const now = new Date();
   const target = new Date(date);
@@ -371,21 +386,22 @@ function weeksUntil(date) {
 }
 
 function calculate() {
-  let totalSetAside = 0;
-  let totalIncome = 0;
-
-  // Salary
   const salaryInputs = salaryDiv.querySelectorAll("input, select");
   const salaryAmt = +salaryInputs[0].value || 0;
   const salaryFreq = salaryInputs[1].value || "monthly";
-  totalIncome += frequencyToWeekly(salaryAmt, salaryFreq);
+
+  // Update heading
+  resultsHeading.textContent = `Results (per ${salaryFreq})`;
+
+  let totalSetAside = 0;
+  let totalIncome = convertToSalaryFrequency(salaryAmt, salaryFreq, salaryFreq);
 
   // Other Income
   document.querySelectorAll("#otherIncomes .item").forEach(item => {
     const inputs = item.querySelectorAll("input, select");
     const amt = +inputs[1].value || 0;
     const freq = inputs[2].value || "monthly";
-    totalIncome += frequencyToWeekly(amt, freq);
+    totalIncome += convertToSalaryFrequency(amt, freq, salaryFreq);
   });
 
   // Bills
@@ -393,7 +409,10 @@ function calculate() {
     const inputs = item.querySelectorAll("input, select");
     const amt = +inputs[1].value || 0;
     const freq = inputs[2].value || "monthly";
-    totalSetAside += frequencyToWeekly(amt, freq);
+    totalSetAside += convertToSalaryFrequency(amt, freq, salaryFreq);
+    // Update summary right side
+    const summaryRight = item.querySelector(".summary-right");
+    summaryRight.textContent = `Amount to Set Aside: $${convertToSalaryFrequency(amt, freq, salaryFreq).toFixed(2)}`;
   });
 
   // One-Offs
@@ -402,7 +421,9 @@ function calculate() {
     const amt = +inputs[1].value || 0;
     const date = inputs[2].value;
     const weeks = date ? weeksUntil(date) : 1;
-    totalSetAside += amt / weeks;
+    const weeklyAmount = amt / weeks;
+    totalSetAside += convertToSalaryFrequency(weeklyAmount, "weekly", salaryFreq);
+    item.querySelector(".summary-right").textContent = `Amount to Set Aside: $${convertToSalaryFrequency(weeklyAmount, "weekly", salaryFreq).toFixed(2)}`;
   });
 
   document.getElementById("setAside").textContent = totalSetAside.toFixed(2);
@@ -433,39 +454,40 @@ function saveData() {
     }))
   };
   localStorage.setItem("choffieBudget", JSON.stringify(data));
-  showAlert("Choffie Finance confirms - Budget saved ✅");
+  showAlert("Choffie Finance confirms ✅ Budget saved");
 }
 
 function loadData() {
   const data = JSON.parse(localStorage.getItem("choffieBudget"));
   if (!data) return;
 
-  // Salary
-  if (data.salary) {
-    salaryDiv.querySelector("input").value = data.salary.amount || 0;
-    salaryDiv.querySelector("select").value = data.salary.frequency || "monthly";
-    updateSalarySummary();
-  }
+  salaryDiv.querySelector("input").value = data.salary.amount;
+  salaryDiv.querySelector("select").value = data.salary.frequency;
+  updateSalarySummary();
 
-  data.otherIncomes?.forEach(addOtherIncome);
-  data.bills?.forEach(addBill);
-  data.oneOffs?.forEach(addOneOff);
+  otherIncomesDiv.innerHTML = "";
+  data.otherIncomes.forEach(i => addOtherIncome(i));
+
+  billsDiv.innerHTML = "";
+  data.bills.forEach(i => addBill(i));
+
+  oneOffsDiv.innerHTML = "";
+  data.oneOffs.forEach(i => addOneOff(i));
 
   calculate();
 }
 
-loadData();
-
 // ----- CUSTOM ALERT -----
 function showAlert(msg) {
-  const alertDiv = document.getElementById("customAlert");
   document.getElementById("alertMessage").textContent = msg;
-  alertDiv.style.display = "block";
+  document.getElementById("customAlert").style.display = "block";
 }
-
 function closeAlert() {
   document.getElementById("customAlert").style.display = "none";
 }
+
+window.onload = loadData;
 </script>
+
 </body>
 </html>
