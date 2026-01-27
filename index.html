@@ -89,6 +89,35 @@ button {
   border-radius: 6px;
   font-size: 1.1em;
 }
+
+/* Custom modal */
+#customAlert {
+  display: none;
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #4CAF50;
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  font-size: 1.2em;
+  z-index: 1000;
+  width: 300px;
+  text-align: center;
+}
+
+#customAlert button {
+  background: white;
+  color: #4CAF50;
+  font-weight: bold;
+  padding: 6px 12px;
+  margin-top: 15px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -149,6 +178,12 @@ button {
     <p><strong>Money left to spend:</strong> $<span id="remaining">0.00</span></p>
   </div>
 
+</div>
+
+<!-- Custom modal -->
+<div id="customAlert">
+  <div id="alertMessage">Choffie Finance confirms ✅</div>
+  <button onclick="closeAlert()">OK</button>
 </div>
 
 <script>
@@ -398,7 +433,7 @@ function saveData() {
     }))
   };
   localStorage.setItem("choffieBudget", JSON.stringify(data));
-  alert("Budget saved ✅");
+  showAlert("Choffie Finance confirms - Budget saved ✅");
 }
 
 function loadData() {
@@ -420,6 +455,17 @@ function loadData() {
 }
 
 loadData();
+
+// ----- CUSTOM ALERT -----
+function showAlert(msg) {
+  const alertDiv = document.getElementById("customAlert");
+  document.getElementById("alertMessage").textContent = msg;
+  alertDiv.style.display = "block";
+}
+
+function closeAlert() {
+  document.getElementById("customAlert").style.display = "none";
+}
 </script>
 </body>
 </html>
